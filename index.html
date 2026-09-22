@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>রাফিকের বক্স</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0a1a;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        .container {
+            max-width: 420px;
+            width: 100%;
+            background: #14142b;
+            border-radius: 40px;
+            padding: 30px 25px 25px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
+            text-align: center;
+            border: 1px solid #2a2a4a;
+        }
+        .header-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 1px;
+        }
+        .header-ip {
+            font-size: 16px;
+            color: #8888bb;
+            background: #1f1f3a;
+            display: inline-block;
+            padding: 4px 18px;
+            border-radius: 30px;
+            margin-top: 6px;
+            font-family: monospace;
+            border: 1px solid #333355;
+        }
+        .profile-img {
+            width: 170px;
+            height: 170px;
+            border-radius: 50%;
+            border: 5px solid #ffd700;
+            box-shadow: 0 0 35px rgba(255, 215, 0, 0.4);
+            object-fit: cover;
+            margin: 20px auto 15px;
+            display: block;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .profile-img:active {
+            transform: scale(0.95);
+        }
+        .main-title {
+            font-size: 26px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 2px;
+            letter-spacing: 1px;
+        }
+        .sub-title {
+            font-size: 16px;
+            color: #aaaacc;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+        #welcomeScreen .open-btn {
+            background: linear-gradient(145deg, #1e3a5f, #0f2440);
+            border: 1px solid #4a7db0;
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+            padding: 16px 20px;
+            border-radius: 60px;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #0a1729;
+            transition: 0.08s linear;
+            margin-top: 5px;
+        }
+        #welcomeScreen .open-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #0a1729;
+        }
+        .tap-hint {
+            color: #555577;
+            font-size: 13px;
+            margin-top: 12px;
+        }
+        #controlPanel {
+            display: none;
+            animation: fadeUp 0.5s ease;
+            margin-top: 5px;
+        }
+        @keyframes fadeUp {
+            0% {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .pwd-area {
+            background: #1f1f3a;
+            padding: 12px 15px;
+            border-radius: 60px;
+            margin: 10px 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #333355;
+        }
+        .pwd-area input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 40px;
+            border: none;
+            font-size: 16px;
+            background: #2d2d4e;
+            color: white;
+            text-align: center;
+            outline: none;
+        }
+        .pwd-area input:focus {
+            outline: 2px solid #ffd700;
+        }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .btn {
+            background: #1b2b44;
+            border: none;
+            color: white;
+            padding: 14px 6px;
+            border-radius: 40px;
+            font-size: 15px;
+            font-weight: bold;
+            width: 46%;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #0b141f;
+            transition: 0.08s linear;
+            border: 1px solid #2a3a55;
+        }
+        .btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #0b141f;
+        }
+        .on {
+            border-left: 7px solid #00e676;
+        }
+        .off {
+            border-left: 7px solid #ff5252;
+        }
+        #msg {
+            margin-top: 18px;
+            font-size: 15px;
+            color: #aab;
+            min-height: 25px;
+            font-weight: 300;
+        }
+        .footer {
+            margin-top: 25px;
+            border-top: 1px solid #2a2a44;
+            padding-top: 18px;
+            font-size: 15px;
+            color: #aaaaaa;
+            letter-spacing: 1px;
+        }
+        .footer .name {
+            color: #ffd700;
+            font-weight: 600;
+        }
+        .footer .box-name {
+            font-size: 13px;
+            color: #555577;
+            margin-top: 4px;
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-title">🔐 Sign in to Rafiq_Box</div>
+        <div class="header-ip">📶 192.168.4.2</div>
+        <img src="photo.jpg" class="profile-img" id="profilePic" alt="My Photo">
+        <div class="main-title">রাফিকের বক্স</div>
+        <div class="sub-title">⭐ রুমের ৪টি বাতি কন্ট্রোল</div>
+        <div id="welcomeScreen">
+            <button class="open-btn" id="enterBtn">🔓 কন্ট্রোল প্যানেল খুলুন</button>
+            <div class="tap-hint">👆 ছবিতেও টাচ করতে পারেন</div>
+        </div>
+        <div id="controlPanel">
+            <div class="pwd-area">
+                <!-- ★★★ হিন্ট সরিয়ে ফেলা হয়েছে — শুধু ইনপুট ★★★ -->
+                <input type="password" id="passInput" placeholder="🔑 পাসওয়ার্ড দিন">
+            </div>
+            <div class="btn-group">
+                <button class="btn on" onclick="sendCmd('L1/ON')">💡 বাতি ১ (অন)</button>
+                <button class="btn off" onclick="sendCmd('L1/OFF')">বাতি ১ (অফ)</button>
+                <button class="btn on" onclick="sendCmd('L2/ON')">💡 বাতি ২ (অন)</button>
+                <button class="btn off" onclick="sendCmd('L2/OFF')">বাতি ২ (অফ)</button>
+                <button class="btn on" onclick="sendCmd('L3/ON')">💡 বাতি ৩ (অন)</button>
+                <button class="btn off" onclick="sendCmd('L3/OFF')">বাতি ৩ (অফ)</button>
+                <button class="btn on" onclick="sendCmd('L4/ON')">💡 বাতি ৪ (অন)</button>
+                <button class="btn off" onclick="sendCmd('L4/OFF')">বাতি ৪ (অফ)</button>
+            </div>
+            <p id="msg">👆 কমান্ড দিন</p>
+        </div>
+        <div class="footer">
+            <div class="name">✍️ রাফিকুল ইসলাম</div>
+            <div class="box-name">⚡ ESP 32 BOX</div>
+        </div>
+    </div>
+    <script>
+        const ESP_IP = "192.168.4.1";
+        const CORRECT_PASS = "2468"; // ★ পাসওয়ার্ডটি এখানে লুকানো আছে, কোথাও দেখায় না ★
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const controlPanel = document.getElementById('controlPanel');
+        const enterBtn = document.getElementById('enterBtn');
+        const profilePic = document.getElementById('profilePic');
+        const msg = document.getElementById('msg');
+
+        function openControlPanel() {
+            welcomeScreen.style.display = 'none';
+            controlPanel.style.display = 'block';
+        }
+        enterBtn.addEventListener('click', openControlPanel);
+        profilePic.addEventListener('click', openControlPanel);
+
+        function sendCmd(cmd) {
+            const pass = document.getElementById('passInput').value;
+            if (pass !== CORRECT_PASS) {
+                msg.innerHTML = "❌ ভুল পাসওয়ার্ড!";
+                msg.style.color = "#ff5252";
+                return;
+            }
+            msg.innerHTML = "⏳ কমান্ড পাঠানো হচ্ছে...";
+            msg.style.color = "#ffd740";
+            fetch(`http://${ESP_IP}/${cmd}`)
+                .then(res => {
+                    if (res.ok) {
+                        msg.innerHTML = "✅ সফল! বাতি পরিবর্তন হয়েছে।";
+                        msg.style.color = "#00e676";
+                    } else {
+                        msg.innerHTML = "❌ ESP32 সাড়া দেয়নি!";
+                        msg.style.color = "#ff5252";
+                    }
+                })
+                .catch(() => {
+                    msg.innerHTML = "⚠️ ESP32 খুঁজে পাচ্ছি না!";
+                    msg.style.color = "#ff5252";
+                });
+        }
+    </script>
+</body>
+</html>
