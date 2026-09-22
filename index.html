@@ -1,273 +1,1001 @@
 <!DOCTYPE html>
-<html>
+<html lang="bn" id="html-root">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>রাফিকের বক্স</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smart Incubator Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary: #ff6b00;
+            --secondary: #1a2b4c;
+            --bg: #f4f6f9;
+            --card-bg: #ffffff;
+            --text: #2c3e50;
+            --border: #e2e8f0;
+            --temp-color: #e74c3c;
+            --hum-color: #3498db;
+            --tray-color: #2ecc71;
+            --danger: #ef4444;
+            --admin-color: #8b5cf6;
         }
-        body {
-            background: #0a0a1a;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            color: #fff;
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding-bottom: 80px; transition: background 0.3s, color 0.3s; }
+        body[dir="rtl"] { direction: rtl; }
+
+        .top-bar { background: var(--primary); color: white; padding: 15px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+        .top-btns { display: flex; gap: 6px; }
+        .icon-btn { background: rgba(255,255,255,0.25); border: none; color: white; padding: 6px 10px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
+
+        .container { padding: 12px; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 15px; border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .card-title { font-size: 1rem; font-weight: bold; margin-bottom: 12px; color: var(--secondary); display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 6px; }
+
+        .auth-container { display: flex; flex-direction: column; justify-content: center; min-height: 80vh; padding: 10px; }
+        .auth-toggle { font-size: 0.85rem; color: var(--primary); text-align: center; margin-top: 12px; cursor: pointer; font-weight: bold; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .stat-box { background: #f8fafc; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid var(--border); }
+        .stat-box .lbl { font-size: 0.75rem; color: #64748b; display: block; margin-bottom: 4px; font-weight: 600; }
+        .stat-box .val { font-size: 1.1rem; font-weight: bold; }
+
+        .status-row { display: flex; justify-content: space-around; margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--border); }
+        .status-item { text-align: center; color: #94a3b8; }
+        .status-item i { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+        .status-item.active-temp { color: var(--temp-color); animation: flicker 1s infinite alternate; }
+        .status-item.active-hum { color: var(--hum-color); animation: pulse 1.5s infinite; }
+        .status-item.active-tray { color: var(--tray-color); animation: spin 3s linear infinite; }
+
+        @keyframes flicker { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .stage-row { display: flex; gap: 6px; align-items: flex-end; margin-bottom: 10px; background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid var(--border); }
+        .stage-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; flex: 1; }
+        .btn-delete { background: var(--danger); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; }
+
+        .notif-item { padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--primary); background: #f8fafc; }
+        .notif-item.danger { border-left-color: var(--danger); background: #fef2f2; }
+        .notif-item .notif-title { font-weight: bold; font-size: 0.85rem; color: var(--secondary); }
+        .notif-item .notif-time { font-size: 0.7rem; color: #94a3b8; margin-top: 2px; }
+
+        .settings-tabs { display: flex; background: #e2e8f0; border-radius: 8px; padding: 3px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; background: transparent; font-weight: bold; border-radius: 6px; cursor: pointer; color: #475569; font-size: 0.75rem; }
+        .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .form-group { margin-bottom: 8px; }
+        .form-group label { display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 3px; color: #475569; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff; color: var(--text); }
+        
+        .btn { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 8px; transition: opacity 0.2s; }
+        .btn:active { opacity: 0.7; }
+        .btn-navy { background: var(--secondary); }
+        .btn-add { background: #059669; margin-bottom: 10px; }
+
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg); display: flex; justify-content: space-around; padding: 8px 0; border-top: 1px solid var(--border); z-index: 100; }
+        .nav-item { text-align: center; color: #64748b; font-size: 0.65rem; font-weight: 600; text-decoration: none; flex: 1; cursor: pointer; }
+        .nav-item i { font-size: 1.3rem; display: block; margin-bottom: 2px; }
+        .nav-item.active { color: var(--primary); }
+
+        .section { display: none; }
+        .section.active { display: block; }
+
+        .progress-bar-bg { background:#e2e8f0; height:22px; border-radius:11px; overflow:hidden; margin:6px 0; }
+        .progress-fill { background:linear-gradient(90deg, #ff6b00, #059669); height:100%; width:0%; transition:width 0.5s; display:flex; align-items:center; justify-content:center; color:white; font-size:0.7rem; font-weight:bold; }
+
+        /* User Role Badge */
+        .role-badge { font-size:0.7rem; padding:3px 10px; border-radius:12px; font-weight:bold; }
+        .role-admin { background:#ede9fe; color:#6d28d9; }
+        .role-user { background:#dbeafe; color:#1d4ed8; }
+
+        /* Machine Cards for Admin */
+        .machine-card { background:var(--card-bg); border-radius:12px; padding:14px; margin-bottom:12px; border-left:5px solid var(--tray-color); cursor:pointer; transition:transform 0.2s; }
+        .machine-card:active { transform:scale(0.98); }
+        .machine-card.offline { border-left-color: var(--danger); opacity:0.7; }
+        .machine-card .mc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+        .machine-card .mc-name { font-weight:bold; color:var(--secondary); font-size:1rem; }
+        .machine-card .mc-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; font-size:0.75rem; }
+        .machine-card .mc-stats span { text-align:center; }
+
+        body.dark-mode {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #e2e8f0;
+            --border: #334155;
+            --secondary: #cbd5e1;
         }
-        .container {
-            max-width: 420px;
-            width: 100%;
-            background: #14142b;
-            border-radius: 40px;
-            padding: 30px 25px 25px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
-            text-align: center;
-            border: 1px solid #2a2a4a;
-        }
-        .header-title {
-            font-size: 22px;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: 1px;
-        }
-        .header-ip {
-            font-size: 16px;
-            color: #8888bb;
-            background: #1f1f3a;
-            display: inline-block;
-            padding: 4px 18px;
-            border-radius: 30px;
-            margin-top: 6px;
-            font-family: monospace;
-            border: 1px solid #333355;
-        }
-        .profile-img {
-            width: 170px;
-            height: 170px;
-            border-radius: 50%;
-            border: 5px solid #ffd700;
-            box-shadow: 0 0 35px rgba(255, 215, 0, 0.4);
-            object-fit: cover;
-            margin: 20px auto 15px;
-            display: block;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-        .profile-img:active {
-            transform: scale(0.95);
-        }
-        .main-title {
-            font-size: 26px;
-            font-weight: 800;
-            color: #fff;
-            margin-bottom: 2px;
-            letter-spacing: 1px;
-        }
-        .sub-title {
-            font-size: 16px;
-            color: #aaaacc;
-            margin-bottom: 20px;
-            font-weight: 300;
-        }
-        #welcomeScreen .open-btn {
-            background: linear-gradient(145deg, #1e3a5f, #0f2440);
-            border: 1px solid #4a7db0;
-            color: white;
-            font-size: 22px;
-            font-weight: bold;
-            padding: 16px 20px;
-            border-radius: 60px;
-            width: 100%;
-            cursor: pointer;
-            box-shadow: 0 6px 0 #0a1729;
-            transition: 0.08s linear;
-            margin-top: 5px;
-        }
-        #welcomeScreen .open-btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 2px 0 #0a1729;
-        }
-        .tap-hint {
-            color: #555577;
-            font-size: 13px;
-            margin-top: 12px;
-        }
-        #controlPanel {
-            display: none;
-            animation: fadeUp 0.5s ease;
-            margin-top: 5px;
-        }
-        @keyframes fadeUp {
-            0% {
-                opacity: 0;
-                transform: translateY(15px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .pwd-area {
-            background: #1f1f3a;
-            padding: 12px 15px;
-            border-radius: 60px;
-            margin: 10px 0 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid #333355;
-        }
-        .pwd-area input {
-            width: 100%;
-            padding: 12px 15px;
-            border-radius: 40px;
-            border: none;
-            font-size: 16px;
-            background: #2d2d4e;
-            color: white;
-            text-align: center;
-            outline: none;
-        }
-        .pwd-area input:focus {
-            outline: 2px solid #ffd700;
-        }
-        .btn-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-        }
-        .btn {
-            background: #1b2b44;
-            border: none;
-            color: white;
-            padding: 14px 6px;
-            border-radius: 40px;
-            font-size: 15px;
-            font-weight: bold;
-            width: 46%;
-            cursor: pointer;
-            box-shadow: 0 4px 0 #0b141f;
-            transition: 0.08s linear;
-            border: 1px solid #2a3a55;
-        }
-        .btn:active {
-            transform: translateY(3px);
-            box-shadow: 0 1px 0 #0b141f;
-        }
-        .on {
-            border-left: 7px solid #00e676;
-        }
-        .off {
-            border-left: 7px solid #ff5252;
-        }
-        #msg {
-            margin-top: 18px;
-            font-size: 15px;
-            color: #aab;
-            min-height: 25px;
-            font-weight: 300;
-        }
-        .footer {
-            margin-top: 25px;
-            border-top: 1px solid #2a2a44;
-            padding-top: 18px;
-            font-size: 15px;
-            color: #aaaaaa;
-            letter-spacing: 1px;
-        }
-        .footer .name {
-            color: #ffd700;
-            font-weight: 600;
-        }
-        .footer .box-name {
-            font-size: 13px;
-            color: #555577;
-            margin-top: 4px;
-            font-family: monospace;
-            letter-spacing: 2px;
-        }
+        body.dark-mode .stat-box { background: #0f172a; }
+        body.dark-mode .stage-row { background: #0f172a; }
+        body.dark-mode .notif-item { background: #0f172a; }
+        body.dark-mode .tab-btn { color: #cbd5e1; }
+        body.dark-mode .tab-btn.active { background: #334155; color: #ff6b00; }
+        body.dark-mode .form-group input, body.dark-mode .form-group textarea, body.dark-mode .form-group select { background: #0f172a; color: #e2e8f0; }
+        body.dark-mode .settings-tabs { background: #334155; }
+
+        #liveChart { width: 100% !important; max-height: 220px; }
+
+        .tips-content { font-size: 0.85rem; line-height: 1.9; color: #475569; }
+        body.dark-mode .tips-content { color: #cbd5e1; }
+
+        /* Language Dropdown */
+        .lang-menu { display:none; position:absolute; top:55px; right:12px; background:white; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:200; overflow:hidden; }
+        .lang-menu.show { display:block; }
+        .lang-menu div { padding:12px 20px; cursor:pointer; font-size:0.9rem; color:#2c3e50; }
+        .lang-menu div:hover { background:#f4f6f9; }
+        .lang-menu div.active-lang { background:#ff6b00; color:white; font-weight:bold; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header-title">🔐 Sign in to Rafiq_Box</div>
-        <div class="header-ip">📶 192.168.4.2</div>
-        <img src="photo.jpg" class="profile-img" id="profilePic" alt="My Photo">
-        <div class="main-title">রাফিকের বক্স</div>
-        <div class="sub-title">⭐ রুমের ৪টি বাতি কন্ট্রোল</div>
-        <div id="welcomeScreen">
-            <button class="open-btn" id="enterBtn">🔓 কন্ট্রোল প্যানেল খুলুন</button>
-            <div class="tap-hint">👆 ছবিতেও টাচ করতে পারেন</div>
-        </div>
-        <div id="controlPanel">
-            <div class="pwd-area">
-                <!-- ★★★ হিন্ট সরিয়ে ফেলা হয়েছে — শুধু ইনপুট ★★★ -->
-                <input type="password" id="passInput" placeholder="🔑 পাসওয়ার্ড দিন">
-            </div>
-            <div class="btn-group">
-                <button class="btn on" onclick="sendCmd('L1/ON')">💡 বাতি ১ (অন)</button>
-                <button class="btn off" onclick="sendCmd('L1/OFF')">বাতি ১ (অফ)</button>
-                <button class="btn on" onclick="sendCmd('L2/ON')">💡 বাতি ২ (অন)</button>
-                <button class="btn off" onclick="sendCmd('L2/OFF')">বাতি ২ (অফ)</button>
-                <button class="btn on" onclick="sendCmd('L3/ON')">💡 বাতি ৩ (অন)</button>
-                <button class="btn off" onclick="sendCmd('L3/OFF')">বাতি ৩ (অফ)</button>
-                <button class="btn on" onclick="sendCmd('L4/ON')">💡 বাতি ৪ (অন)</button>
-                <button class="btn off" onclick="sendCmd('L4/OFF')">বাতি ৪ (অফ)</button>
-            </div>
-            <p id="msg">👆 কমান্ড দিন</p>
-        </div>
-        <div class="footer">
-            <div class="name">✍️ রাফিকুল ইসলাম</div>
-            <div class="box-name">⚡ ESP 32 BOX</div>
+
+    <div class="top-bar">
+        <span id="app-title">Smart Incubator Pro</span>
+        <div class="top-btns">
+            <button class="icon-btn" onclick="toggleLangMenu(event)"><i class="fas fa-globe"></i> <span id="lang-label">বাং</span></button>
+            <button class="icon-btn" onclick="toggleDarkMode()"><i class="fas fa-moon"></i></button>
         </div>
     </div>
+    <div class="lang-menu" id="lang-menu">
+        <div data-lang="bn" onclick="setLanguage('bn')">🇧🇩 বাংলা</div>
+        <div data-lang="en" onclick="setLanguage('en')">🇬🇧 English</div>
+        <div data-lang="ar" onclick="setLanguage('ar')">🇸🇦 العربية</div>
+    </div>
+
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen" class="container auth-container">
+        <div class="card" id="card-login">
+            <div class="card-title"><span id="t-login">ইউজার লগইন</span></div>
+            <div class="form-group">
+                <label id="t-email">ইমেইল / মোবাইল</label>
+                <input type="text" id="login-email" placeholder="user@example.com">
+            </div>
+            <div class="form-group">
+                <label id="t-password">পাসওয়ার্ড</label>
+                <input type="password" id="login-pass" placeholder="******">
+            </div>
+            <div class="form-group">
+                <label id="t-role">আপনি কে?</label>
+                <select id="login-role">
+                    <option value="user" id="t-opt-user">👤 গ্রাহক</option>
+                    <option value="admin" id="t-opt-admin">👑 অ্যাডমিন</option>
+                </select>
+            </div>
+            <button class="btn" onclick="userLogin()" id="t-login-btn">লগইন করুন</button>
+            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                <span class="auth-toggle" onclick="toggleAuth('signup')" id="t-signup-link">নতুন একাউন্ট</span>
+                <span class="auth-toggle" style="color:#64748b;" onclick="toggleAuth('reset')" id="t-reset-link">পাসওয়ার্ড ভুলে গেছেন?</span>
+            </div>
+        </div>
+
+        <div class="card" id="card-signup" style="display: none;">
+            <div class="card-title"><span id="t-signup-title">নতুন একাউন্ট</span></div>
+            <div class="form-group">
+                <label id="t-name">পূর্ণ নাম</label>
+                <input type="text" id="signup-name" placeholder="রহিম আহমেদ">
+            </div>
+            <div class="form-group">
+                <label id="t-email2">ইমেইল</label>
+                <input type="email" id="signup-email">
+            </div>
+            <div class="form-group">
+                <label id="t-phone">মোবাইল নম্বর</label>
+                <input type="tel" id="signup-phone">
+            </div>
+            <div class="form-group">
+                <label id="t-pass2">পাসওয়ার্ড</label>
+                <input type="password" id="signup-pass">
+            </div>
+            <div class="form-group">
+                <label id="t-machine-id">মেশিন আইডি (গ্রাহকের জন্য)</label>
+                <input type="text" id="signup-machine" placeholder="MACHINE-001">
+            </div>
+            <button class="btn btn-add" onclick="userSignUp()" id="t-create-btn">একাউন্ট তৈরি করুন</button>
+            <div class="auth-toggle" onclick="toggleAuth('login')" id="t-back-login">লগইনে ফিরুন</div>
+        </div>
+
+        <div class="card" id="card-reset" style="display: none;">
+            <div class="card-title"><span id="t-reset-title">পাসওয়ার্ড রিসেট</span></div>
+            <div class="form-group">
+                <label id="t-reset-email">রেজিস্টার্ড ইমেইল</label>
+                <input type="email" id="reset-email">
+            </div>
+            <button class="btn btn-navy" onclick="resetPassword()" id="t-send-reset">রিসেট লিংক পাঠান</button>
+            <div class="auth-toggle" onclick="toggleAuth('login')" id="t-back2">লগইনে ফিরুন</div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="app-screen" style="display: none;">
+        <div class="container">
+
+            <!-- ================= ADMIN DASHBOARD ================= -->
+            <section id="sec-admin" class="section">
+                <div class="card">
+                    <div class="card-title">
+                        <span id="t-admin-panel">👑 অ্যাডমিন প্যানেল</span>
+                        <span class="role-badge role-admin" id="t-admin-badge">ADMIN</span>
+                    </div>
+                    <div class="grid-3">
+                        <div class="stat-box"><span class="lbl" id="t-total-machines">মোট মেশিন</span><span class="val" id="admin-total">০</span></div>
+                        <div class="stat-box"><span class="lbl" id="t-online">অনলাইন</span><span class="val" style="color:#059669" id="admin-online">০</span></div>
+                        <div class="stat-box"><span class="lbl" id="t-offline">অফলাইন</span><span class="val" style="color:#ef4444" id="admin-offline">০</span></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title" id="t-all-machines">সব মেশিন</div>
+                    <div id="machine-list">
+                        <!-- Machines will load here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= USER HOME ================= -->
+            <section id="sec-home" class="section">
+                <button class="btn btn-navy" style="margin-bottom: 12px;" onclick="resetBatch()"><i class="fas fa-rotate-right"></i> <span id="t-new-batch">নতুন ব্যাচ শুরু</span></button>
+
+                <div class="card">
+                    <div class="card-title">
+                        <span id="t-live-status">রিয়েল-টাইম অবস্থা</span>
+                        <span style="font-size:0.75rem; background:var(--primary); color:white; padding:2px 8px; border-radius:10px;" id="disp-day">দিন ১</span>
+                    </div>
+                    <div class="grid-2">
+                        <div class="stat-box">
+                            <span class="lbl" id="t-temp-curr">তাপমাত্রা</span>
+                            <span class="val" style="color:var(--temp-color)" id="curr-temp">-- °C</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="lbl" id="t-hum-curr">আর্দ্রতা</span>
+                            <span class="val" style="color:var(--hum-color)" id="curr-hum">-- %</span>
+                        </div>
+                    </div>
+                    <div class="status-row">
+                        <div class="status-item" id="st-heater"><i class="fas fa-fire"></i><span style="font-size:0.7rem;" id="t-heater">হিটার</span></div>
+                        <div class="status-item" id="st-hum"><i class="fas fa-droplet"></i><span style="font-size:0.7rem;" id="t-hum">হিউমিডিটি</span></div>
+                        <div class="status-item" id="st-tray"><i class="fas fa-sync"></i><span style="font-size:0.7rem;" id="t-tray">ট্রে মোটর</span></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title" id="t-control">মেশিন কন্ট্রোল</div>
+                    <div class="grid-2" style="margin-bottom: 10px;">
+                        <button class="btn" style="background: #e74c3c; margin:0;" onclick="sendCommand('heater_on')"><i class="fas fa-fire"></i> <span id="t-heater-on">হিটার অন</span></button>
+                        <button class="btn" style="background: #94a3b8; margin:0;" onclick="sendCommand('heater_off')"><span id="t-heater-off">হিটার অফ</span></button>
+                    </div>
+                    <div class="grid-2" style="margin-bottom: 10px;">
+                        <button class="btn" style="background: #3498db; margin:0;" onclick="sendCommand('humidifier_on')"><i class="fas fa-droplet"></i> <span id="t-hum-on">হিউমিডিটি অন</span></button>
+                        <button class="btn" style="background: #94a3b8; margin:0;" onclick="sendCommand('humidifier_off')"><span id="t-hum-off">হিউমিডিটি অফ</span></button>
+                    </div>
+                    <button class="btn btn-navy" onclick="sendCommand('turn_tray')"><i class="fas fa-sync"></i> <span id="t-turn-tray">ট্রে ঘোরান</span></button>
+                </div>
+
+                <div class="card">
+                    <div class="card-title" id="t-bird-select">🐔 পাখির ধরন নির্বাচন</div>
+                    <div class="form-group">
+                        <select id="bird-preset" onchange="applyBirdPreset()">
+                            <option value="" id="t-select-opt">-- পাখি নির্বাচন --</option>
+                            <option value="chicken">🐔 <span id="t-chicken">মুরগি</span> (২১)</option>
+                            <option value="quail">🐦 <span id="t-quail">কোয়েল</span> (১৮)</option>
+                            <option value="duck">🦆 <span id="t-duck">হাঁস</span> (২৮)</option>
+                            <option value="turkey">🦃 <span id="t-turkey">টার্কি</span> (২৮)</option>
+                            <option value="pigeon">🕊️ <span id="t-pigeon">কবুতর</span> (১৮)</option>
+                        </select>
+                    </div>
+                    <div class="stat-box" style="margin-top:10px;">
+                        <span class="lbl" id="t-batch-progress">ব্যাচ প্রগ্রেস</span>
+                        <div class="progress-bar-bg"><div id="progress-fill" class="progress-fill">0%</div></div>
+                        <span class="val" id="progress-text" style="font-size:0.85rem;">০ / ২১</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title" id="t-chart-title">📊 তাপমাত্রা ও আর্দ্রতার গ্রাফ</div>
+                    <canvas id="liveChart" height="200"></canvas>
+                </div>
+
+                <div class="card">
+                    <div class="card-title" id="t-countdown">⏰ ট্রে ঘোরানোর কাউন্টডাউন</div>
+                    <div class="grid-2">
+                        <div class="stat-box"><span class="lbl" id="t-last-turn">শেষ ঘূর্ণন</span><span class="val" id="last-turn">--:--</span></div>
+                        <div class="stat-box"><span class="lbl" id="t-next-turn">পরবর্তী</span><span class="val" style="color:var(--tray-color)" id="next-turn">--:--:--</span></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title" id="t-targets">চলতি টার্গেট মানসমূহ</div>
+                    <div class="grid-3">
+                        <div class="stat-box"><span class="lbl" id="t-tgt-temp">টার্গেট তাপ</span><span class="val" id="tgt-temp">--</span></div>
+                        <div class="stat-box"><span class="lbl" id="t-tgt-hum">টার্গেট আর্দ্রতা</span><span class="val" id="tgt-hum">--</span></div>
+                        <div class="stat-box"><span class="lbl" id="t-tgt-tray">ট্রে</span><span class="val" id="tgt-tray">--</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SETTINGS SECTION -->
+            <section id="sec-settings" class="section">
+                <div class="settings-tabs">
+                    <button class="tab-btn active" onclick="switchTab('temp', this)"><i class="fas fa-temperature-high"></i> <span id="t-temp-tab">তাপ</span></button>
+                    <button class="tab-btn" onclick="switchTab('hum', this)"><i class="fas fa-water"></i> <span id="t-hum-tab">আর্দ্রতা</span></button>
+                    <button class="tab-btn" onclick="switchTab('tray', this)"><i class="fas fa-gear"></i> <span id="t-tray-tab">ট্রে</span></button>
+                </div>
+
+                <div id="tab-temp" class="tab-content active">
+                    <div class="card">
+                        <div class="card-title" id="t-temp-settings">তাপমাত্রা সেটিংস</div>
+                        <div id="temp-stage-list"></div>
+                        <button class="btn btn-add" onclick="addStage('temp')"><span id="t-add-stage">+ নতুন স্টেজ</span></button>
+                        <button class="btn" onclick="saveSettings('temp')" id="t-save">সেভ করুন</button>
+                    </div>
+                </div>
+                <div id="tab-hum" class="tab-content">
+                    <div class="card">
+                        <div class="card-title" id="t-hum-settings">আর্দ্রতা সেটিংস</div>
+                        <div id="hum-stage-list"></div>
+                        <button class="btn btn-add" onclick="addStage('hum')"><span id="t-add-stage2">+ নতুন স্টেজ</span></button>
+                        <button class="btn" onclick="saveSettings('hum')" id="t-save2">সেভ করুন</button>
+                    </div>
+                </div>
+                <div id="tab-tray" class="tab-content">
+                    <div class="card">
+                        <div class="card-title" id="t-tray-settings">ট্রে মোটর সেড্যুল</div>
+                        <div id="tray-stage-list"></div>
+                        <button class="btn btn-add" onclick="addStage('tray')"><span id="t-add-stage3">+ নতুন স্টেজ</span></button>
+                        <button class="btn" onclick="saveSettings('tray')" id="t-save3">সেভ করুন</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- NOTIFICATION SECTION -->
+            <section id="sec-notif" class="section">
+                <div class="card">
+                    <div class="card-title" id="t-notif-center">নোটিফিকেশন সেন্টার</div>
+                    <div id="notif-list">
+                        <div class="notif-item">
+                            <div class="notif-title"><i class="fas fa-circle-info"></i> <span id="t-welcome">সিস্টেম চালু</span></div>
+                            <p style="font-size:0.75rem; color:#475569; margin-top:2px;" id="t-welcome-msg">আপনার অ্যাপে স্বাগতম।</p>
+                            <div class="notif-time" id="t-now">এখনই</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CALCULATOR SECTION -->
+            <section id="sec-calc" class="section">
+                <div class="card">
+                    <div class="card-title" id="t-memo">📝 ক্যান্ডলিং মেমো</div>
+                    <div class="form-group">
+                        <label id="t-fertile">ভালো ডিম</label>
+                        <input type="number" id="memo-fertile" placeholder="৮০" onchange="saveMemo()">
+                    </div>
+                    <div class="form-group">
+                        <label id="t-waste">নষ্ট ডিম</label>
+                        <input type="number" id="memo-waste" placeholder="২০" onchange="saveMemo()">
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title" id="t-calc">💰 লাভ-ক্ষতি ক্যালকুলেটর</div>
+                    <div class="form-group"><label id="t-total-eggs">মোট ডিম</label><input type="number" id="calc-eggs" value="100" oninput="calculateProfit()"></div>
+                    <div class="form-group"><label id="t-egg-price">প্রতি ডিমের দাম</label><input type="number" id="calc-egg-price" value="2" step="0.5" oninput="calculateProfit()"></div>
+                    <div class="form-group"><label id="t-elec">বিদ্যুৎ বিল</label><input type="number" id="calc-elec-cost" value="15" oninput="calculateProfit()"></div>
+                    <div class="form-group"><label id="t-hatch-rate">হ্যাচ রেট (%)</label><input type="number" id="calc-rate" value="85" oninput="calculateProfit()"></div>
+                    <div class="form-group"><label id="t-chick-price">প্রতি বাচ্চার দাম</label><input type="number" id="calc-chick-price" value="8" step="0.5" oninput="calculateProfit()"></div>
+                    <div class="grid-2" style="margin-top:12px;">
+                        <div class="stat-box"><span class="lbl" id="t-est-chicks">আনুমানিক বাচ্চা</span><span class="val" id="calc-chicks" style="color:var(--tray-color)">0</span></div>
+                        <div class="stat-box"><span class="lbl" id="t-total-profit">মোট লাভ</span><span class="val" id="calc-profit" style="color:var(--primary)">0</span></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title" id="t-tips">📖 ইনকিউবেশন টিপস</div>
+                    <div class="tips-content" id="tips-container"></div>
+                </div>
+            </section>
+
+            <!-- CONTACT SECTION -->
+            <section id="sec-contact" class="section">
+                <div class="card">
+                    <div class="card-title" id="t-contact">যোগাযোগ করুন</div>
+                    <p style="font-size:0.85rem; margin-bottom:12px; color:#475569;" id="t-contact-msg">মেশিনের যেকোনো সমস্যায় কল করুন।</p>
+                    <a id="call-btn" href="tel:01700000000" class="btn btn-navy" style="text-decoration:none; display:block; text-align:center; margin-bottom:15px;">
+                        <i class="fas fa-phone"></i> <span id="t-call">সরাসরি কল করুন</span> (<span id="disp-support-num">01700000000</span>)
+                    </a>
+                    <div class="form-group">
+                        <label id="t-your-msg">মেসেজ বা সমস্যা</label>
+                        <textarea id="user-msg" rows="4"></textarea>
+                    </div>
+                    <button class="btn" onclick="sendMessage()" id="t-send-msg"><i class="fas fa-paper-plane"></i> মেসেজ পাঠান</button>
+                </div>
+                <div class="card">
+                    <button class="btn" style="background:#ef4444;" onclick="logout()"><i class="fas fa-right-from-bracket"></i> <span id="t-logout">লগআউট</span></button>
+                </div>
+            </section>
+        </div>
+
+        <!-- BOTTOM NAV -->
+        <nav class="bottom-nav">
+            <div class="nav-item active" onclick="navTo('home', this)" id="nav-home"><i class="fas fa-house"></i><span id="t-nav-home">হোম</span></div>
+            <div class="nav-item" onclick="navTo('admin', this)" id="nav-admin" style="display:none;"><i class="fas fa-crown"></i><span id="t-nav-admin">অ্যাডমিন</span></div>
+            <div class="nav-item" onclick="navTo('settings', this)"><i class="fas fa-sliders"></i><span id="t-nav-set">সেটিংস</span></div>
+            <div class="nav-item" onclick="navTo('notif', this)"><i class="fas fa-bell"></i><span id="t-nav-notif">অ্যালার্ট</span></div>
+            <div class="nav-item" onclick="navTo('calc', this)"><i class="fas fa-calculator"></i><span id="t-nav-calc">হিসাব</span></div>
+            <div class="nav-item" onclick="navTo('contact', this)"><i class="fas fa-headset"></i><span id="t-nav-contact">কল</span></div>
+        </nav>
+    </div>
+
     <script>
-        const ESP_IP = "192.168.4.1";
-        const CORRECT_PASS = "2468"; // ★ পাসওয়ার্ডটি এখানে লুকানো আছে, কোথাও দেখায় না ★
-        const welcomeScreen = document.getElementById('welcomeScreen');
-        const controlPanel = document.getElementById('controlPanel');
-        const enterBtn = document.getElementById('enterBtn');
-        const profilePic = document.getElementById('profilePic');
-        const msg = document.getElementById('msg');
+        // ==================== TRANSLATIONS ====================
+        const translations = {
+            bn: {
+                appTitle: "Smart Incubator Pro",
+                login: "ইউজার লগইন", email: "ইমেইল / মোবাইল", password: "পাসওয়ার্ড",
+                role: "আপনি কে?", optUser: "👤 গ্রাহক", optAdmin: "👑 অ্যাডমিন",
+                loginBtn: "লগইন করুন", signupLink: "নতুন একাউন্ট", resetLink: "পাসওয়ার্ড ভুলে গেছেন?",
+                signupTitle: "নতুন একাউন্ট", name: "পূর্ণ নাম", phone: "মোবাইল নম্বর",
+                machineId: "মেশিন আইডি", createBtn: "একাউন্ট তৈরি করুন", backLogin: "লগইনে ফিরুন",
+                resetTitle: "পাসওয়ার্ড রিসেট", resetEmail: "রেজিস্টার্ড ইমেইল", sendReset: "রিসেট লিংক পাঠান",
+                adminPanel: "👑 অ্যাডমিন প্যানেল", totalMachines: "মোট মেশিন", online: "অনলাইন", offline: "অফলাইন",
+                allMachines: "সব মেশিন", newBatch: "নতুন ব্যাচ শুরু", liveStatus: "রিয়েল-টাইম অবস্থা",
+                tempCurr: "তাপমাত্রা", humCurr: "আর্দ্রতা", heater: "হিটার", hum: "হিউমিডিটি", tray: "ট্রে মোটর",
+                control: "মেশিন কন্ট্রোল", heaterOn: "হিটার অন", heaterOff: "হিটার অফ",
+                humOn: "হিউমিডিটি অন", humOff: "হিউমিডিটি অফ", turnTray: "ট্রে ঘোরান",
+                birdSelect: "🐔 পাখির ধরন নির্বাচন", selectOpt: "-- পাখি নির্বাচন --",
+                batchProgress: "ব্যাচ প্রগ্রেস", chartTitle: "📊 তাপমাত্রা ও আর্দ্রতার গ্রাফ",
+                countdown: "⏰ ট্রে ঘোরানোর কাউন্টডাউন", lastTurn: "শেষ ঘূর্ণন", nextTurn: "পরবর্তী",
+                targets: "চলতি টার্গেট", tgtTemp: "টার্গেট তাপ", tgtHum: "টার্গেট আর্দ্রতা", tgtTray: "ট্রে",
+                tempSettings: "তাপমাত্রা সেটিংস", humSettings: "আর্দ্রতা সেটিংস", traySettings: "ট্রে মোটর সেড্যুল",
+                addStage: "+ নতুন স্টেজ", save: "সেভ করুন",
+                notifCenter: "নোটিফিকেশন সেন্টার", welcome: "সিস্টেম চালু", welcomeMsg: "আপনার অ্যাপে স্বাগতম।", now: "এখনই",
+                memo: "📝 ক্যান্ডলিং মেমো", fertile: "ভালো ডিম", waste: "নষ্ট ডিম",
+                calc: "💰 লাভ-ক্ষতি ক্যালকুলেটর", totalEggs: "মোট ডিম", eggPrice: "প্রতি ডিমের দাম",
+                elec: "বিদ্যুৎ বিল", hatchRate: "হ্যাচ রেট (%)", chickPrice: "প্রতি বাচ্চার দাম",
+                estChicks: "আনুমানিক বাচ্চা", totalProfit: "মোট লাভ", tips: "📖 ইনকিউবেশন টিপস",
+                contact: "যোগাযোগ করুন", contactMsg: "মেশিনের যেকোনো সমস্যায় কল করুন।",
+                call: "সরাসরি কল করুন", yourMsg: "মেসেজ বা সমস্যা", sendMsg: "মেসেজ পাঠান", logout: "লগআউট",
+                navHome: "হোম", navAdmin: "অ্যাডমিন", navSet: "সেটিংস", navNotif: "অ্যালার্ট", navCalc: "হিসাব", navContact: "কল",
+                machine: "মেশিন", noMachine: "কোনো মেশিন নেই", lastSeen: "শেষ দেখা"
+            },
+            en: {
+                appTitle: "Smart Incubator Pro",
+                login: "User Login", email: "Email / Mobile", password: "Password",
+                role: "Who are you?", optUser: "👤 Customer", optAdmin: "👑 Admin",
+                loginBtn: "Login", signupLink: "New Account", resetLink: "Forgot Password?",
+                signupTitle: "New Account", name: "Full Name", phone: "Mobile Number",
+                machineId: "Machine ID", createBtn: "Create Account", backLogin: "Back to Login",
+                resetTitle: "Password Reset", resetEmail: "Registered Email", sendReset: "Send Reset Link",
+                adminPanel: "👑 Admin Panel", totalMachines: "Total Machines", online: "Online", offline: "Offline",
+                allMachines: "All Machines", newBatch: "Start New Batch", liveStatus: "Real-Time Status",
+                tempCurr: "Temperature", humCurr: "Humidity", heater: "Heater", hum: "Humidity", tray: "Tray Motor",
+                control: "Machine Control", heaterOn: "Heater ON", heaterOff: "Heater OFF",
+                humOn: "Humidifier ON", humOff: "Humidifier OFF", turnTray: "Turn Tray",
+                birdSelect: "🐔 Select Bird Type", selectOpt: "-- Select Bird --",
+                batchProgress: "Batch Progress", chartTitle: "📊 Temperature & Humidity Chart",
+                countdown: "⏰ Tray Turn Countdown", lastTurn: "Last Turn", nextTurn: "Next",
+                targets: "Current Targets", tgtTemp: "Target Temp", tgtHum: "Target Humidity", tgtTray: "Tray",
+                tempSettings: "Temperature Settings", humSettings: "Humidity Settings", traySettings: "Tray Motor Schedule",
+                addStage: "+ Add Stage", save: "Save",
+                notifCenter: "Notification Center", welcome: "System Started", welcomeMsg: "Welcome to your app.", now: "Just now",
+                memo: "📝 Candling Memo", fertile: "Fertile Eggs", waste: "Waste Eggs",
+                calc: "💰 Profit Calculator", totalEggs: "Total Eggs", eggPrice: "Price per Egg",
+                elec: "Electricity Cost", hatchRate: "Hatch Rate (%)", chickPrice: "Price per Chick",
+                estChicks: "Est. Chicks", totalProfit: "Total Profit", tips: "📖 Incubation Tips",
+                contact: "Contact Us", contactMsg: "Call us for any machine issues.",
+                call: "Direct Call", yourMsg: "Message or Issue", sendMsg: "Send Message", logout: "Logout",
+                navHome: "Home", navAdmin: "Admin", navSet: "Settings", navNotif: "Alerts", navCalc: "Calc", navContact: "Call",
+                machine: "Machine", noMachine: "No machines yet", lastSeen: "Last seen"
+            },
+            ar: {
+                appTitle: "حاضنة ذكية",
+                login: "تسجيل دخول", email: "البريد / الهاتف", password: "كلمة المرور",
+                role: "من أنت؟", optUser: "👤 عميل", optAdmin: "👑 مدير",
+                loginBtn: "دخول", signupLink: "حساب جديد", resetLink: "نسيت كلمة المرور؟",
+                signupTitle: "حساب جديد", name: "الاسم الكامل", phone: "رقم الجوال",
+                machineId: "معرف الجهاز", createBtn: "إنشاء حساب", backLogin: "العودة للدخول",
+                resetTitle: "إعادة تعيين", resetEmail: "البريد المسجل", sendReset: "إرسال الرابط",
+                adminPanel: "👑 لوحة المدير", totalMachines: "إجمالي الأجهزة", online: "متصل", offline: "غير متصل",
+                allMachines: "كل الأجهزة", newBatch: "بدء دفعة جديدة", liveStatus: "الحالة المباشرة",
+                tempCurr: "الحرارة", humCurr: "الرطوبة", heater: "السخان", hum: "المرطب", tray: "محرك الصينية",
+                control: "التحكم", heaterOn: "تشغيل السخان", heaterOff: "إيقاف السخان",
+                humOn: "تشغيل المرطب", humOff: "إيقاف المرطب", turnTray: "إدارة الصينية",
+                birdSelect: "🐔 اختر نوع الطائر", selectOpt: "-- اختر --",
+                batchProgress: "تقدم الدفعة", chartTitle: "📊 مخطط الحرارة والرطوبة",
+                countdown: "⏰ العد التنازلي للدوران", lastTurn: "آخر دوران", nextTurn: "التالي",
+                targets: "الأهداف الحالية", tgtTemp: "هدف الحرارة", tgtHum: "هدف الرطوبة", tgtTray: "الصينية",
+                tempSettings: "إعدادات الحرارة", humSettings: "إعدادات الرطوبة", traySettings: "جدول الصينية",
+                addStage: "+ مرحلة جديدة", save: "حفظ",
+                notifCenter: "مركز الإشعارات", welcome: "تم التشغيل", welcomeMsg: "مرحباً بك.", now: "الآن",
+                memo: "📝 سجل الفحص", fertile: "بيض ملقح", waste: "بيض تالف",
+                calc: "💰 حاسبة الربح", totalEggs: "إجمالي البيض", eggPrice: "سعر البيضة",
+                elec: "تكلفة الكهرباء", hatchRate: "نسبة الفقس (%)", chickPrice: "سعر الكتكوت",
+                estChicks: "الكتاكيت المتوقعة", totalProfit: "صافي الربح", tips: "📖 نصائح",
+                contact: "تواصل معنا", contactMsg: "اتصل بنا لأي مشكلة.",
+                call: "اتصال مباشر", yourMsg: "رسالتك", sendMsg: "إرسال", logout: "خروج",
+                navHome: "الرئيسية", navAdmin: "المدير", navSet: "الإعدادات", navNotif: "التنبيهات", navCalc: "الحساب", navContact: "اتصال",
+                machine: "جهاز", noMachine: "لا توجد أجهزة", lastSeen: "آخر ظهور"
+            }
+        };
 
-        function openControlPanel() {
-            welcomeScreen.style.display = 'none';
-            controlPanel.style.display = 'block';
+        let currentLang = 'bn';
+        let currentUser = null;
+
+        function t(key) {
+            return translations[currentLang][key] || key;
         }
-        enterBtn.addEventListener('click', openControlPanel);
-        profilePic.addEventListener('click', openControlPanel);
 
-        function sendCmd(cmd) {
-            const pass = document.getElementById('passInput').value;
-            if (pass !== CORRECT_PASS) {
-                msg.innerHTML = "❌ ভুল পাসওয়ার্ড!";
-                msg.style.color = "#ff5252";
+        // ==================== FIREBASE ====================
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "esp32-incobater.firebaseapp.com",
+            databaseURL: "https://esp32-incobater-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "esp32-incobater",
+            storageBucket: "esp32-incobater.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef"
+        };
+
+        // ==================== DATA ====================
+        let tempConfig = [{ startDay: 1, endDay: 21, val: 37.5 }];
+        let humConfig = [{ startDay: 1, endDay: 21, val: 55 }];
+        let trayConfig = [{ startDay: 1, endDay: 21, val: 2 }];
+
+        const birdPresets = {
+            chicken: { name: "মুরগি", days: 21, temp: 37.5, hum: 55, turn: 2 },
+            quail: { name: "কোয়েল", days: 18, temp: 37.7, hum: 60, turn: 2 },
+            duck: { name: "হাঁস", days: 28, temp: 37.5, hum: 60, turn: 2 },
+            turkey: { name: "টার্কি", days: 28, temp: 37.5, hum: 55, turn: 2 },
+            pigeon: { name: "কবুতর", days: 18, temp: 37.4, hum: 55, turn: 2 }
+        };
+
+        // ==================== LANGUAGE ====================
+        function toggleLangMenu(e) {
+            e.stopPropagation();
+            document.getElementById('lang-menu').classList.toggle('show');
+        }
+        document.addEventListener('click', function() {
+            document.getElementById('lang-menu').classList.remove('show');
+        });
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('app_lang', lang);
+            document.getElementById('lang-label').innerText = lang === 'bn' ? 'বাং' : (lang === 'en' ? 'EN' : 'ع');
+            document.getElementById('html-root').setAttribute('lang', lang);
+            if (lang === 'ar') {
+                document.body.setAttribute('dir', 'rtl');
+            } else {
+                document.body.removeAttribute('dir');
+            }
+            applyTranslations();
+            if (currentUser && currentUser.role === 'admin') loadAdminMachines();
+        }
+
+        function applyTranslations() {
+            const map = {
+                'app-title': 'appTitle', 't-login': 'login', 't-email': 'email', 't-password': 'password',
+                't-role': 'role', 't-opt-user': 'optUser', 't-opt-admin': 'optAdmin', 't-login-btn': 'loginBtn',
+                't-signup-link': 'signupLink', 't-reset-link': 'resetLink', 't-signup-title': 'signupTitle',
+                't-name': 'name', 't-email2': 'email', 't-phone': 'phone', 't-pass2': 'password',
+                't-machine-id': 'machineId', 't-create-btn': 'createBtn', 't-back-login': 'backLogin',
+                't-reset-title': 'resetTitle', 't-reset-email': 'resetEmail', 't-send-reset': 'sendReset', 't-back2': 'backLogin',
+                't-admin-panel': 'adminPanel', 't-admin-badge': 'navAdmin', 't-total-machines': 'totalMachines',
+                't-online': 'online', 't-offline': 'offline', 't-all-machines': 'allMachines',
+                't-new-batch': 'newBatch', 't-live-status': 'liveStatus', 't-temp-curr': 'tempCurr',
+                't-hum-curr': 'humCurr', 't-heater': 'heater', 't-hum': 'hum', 't-tray': 'tray',
+                't-control': 'control', 't-heater-on': 'heaterOn', 't-heater-off': 'heaterOff',
+                't-hum-on': 'humOn', 't-hum-off': 'humOff', 't-turn-tray': 'turnTray',
+                't-bird-select': 'birdSelect', 't-select-opt': 'selectOpt', 't-batch-progress': 'batchProgress',
+                't-chart-title': 'chartTitle', 't-countdown': 'countdown', 't-last-turn': 'lastTurn', 't-next-turn': 'nextTurn',
+                't-targets': 'targets', 't-tgt-temp': 'tgtTemp', 't-tgt-hum': 'tgtHum', 't-tgt-tray': 'tgtTray',
+                't-temp-tab': 'tempCurr', 't-hum-tab': 'humCurr', 't-tray-tab': 'tray',
+                't-temp-settings': 'tempSettings', 't-hum-settings': 'humSettings', 't-tray-settings': 'traySettings',
+                't-add-stage': 'addStage', 't-add-stage2': 'addStage', 't-add-stage3': 'addStage',
+                't-save': 'save', 't-save2': 'save', 't-save3': 'save',
+                't-notif-center': 'notifCenter', 't-welcome': 'welcome', 't-welcome-msg': 'welcomeMsg', 't-now': 'now',
+                't-memo': 'memo', 't-fertile': 'fertile', 't-waste': 'waste',
+                't-calc': 'calc', 't-total-eggs': 'totalEggs', 't-egg-price': 'eggPrice',
+                't-elec': 'elec', 't-hatch-rate': 'hatchRate', 't-chick-price': 'chickPrice',
+                't-est-chicks': 'estChicks', 't-total-profit': 'totalProfit', 't-tips': 'tips',
+                't-contact': 'contact', 't-contact-msg': 'contactMsg', 't-call': 'call',
+                't-your-msg': 'yourMsg', 't-send-msg': 'sendMsg', 't-logout': 'logout',
+                't-nav-home': 'navHome', 't-nav-admin': 'navAdmin', 't-nav-set': 'navSet',
+                't-nav-notif': 'navNotif', 't-nav-calc': 'navCalc', 't-nav-contact': 'navContact'
+            };
+            for (const id in map) {
+                const el = document.getElementById(id);
+                if (el) el.innerText = t(map[id]);
+            }
+            // Bird preset dropdown options
+            document.querySelectorAll('#bird-preset option').forEach(opt => {
+                if (opt.value === '') opt.text = t('selectOpt');
+                else {
+                    const b = birdPresets[opt.value];
+                    opt.text = (opt.value === 'chicken' ? '🐔 ' : opt.value === 'quail' ? '🐦 ' : opt.value === 'duck' ? '🦆 ' : opt.value === 'turkey' ? '🦃 ' : '🕊️ ') + b.name + ' (' + b.days + ')';
+                }
+            });
+            // Tips
+            const tips = {
+                bn: ['🌡️ তাপমাত্রা: মুরগির ডিমের জন্য ৩৭.৫°C - ৩৭.৮°C আদর্শ।', '💧 আর্দ্রতা: প্রথম ১৮ দিন ৫০-৫৫%, শেষ ৩ দিন ৬৫-৭০%।', '🔄 ট্রে: দিনে ৩-৪ বার ঘোরান। শেষ ৩ দিন ঘোরাবেন না।', '⚠️ সতর্কতা: ৩৮.৫°C এর উপরে গেলে ডিম নষ্ট হবে।', '🥚 ডিম: মাঝারি সাইজের, ৫-৭ দিনের পুরনো নয়।'],
+                en: ['🌡️ Temperature: 37.5°C - 37.8°C ideal for chicken eggs.', '💧 Humidity: 50-55% for first 18 days, 65-70% last 3 days.', '🔄 Tray: Turn 3-4 times daily. Stop last 3 days.', '⚠️ Warning: Above 38.5°C eggs will spoil.', '🥚 Eggs: Medium size, not older than 5-7 days.'],
+                ar: ['🌡️ الحرارة: 37.5-37.8°م مثالية لبيض الدجاج.', '💧 الرطوبة: 50-55% أول 18 يوم، 65-70% آخر 3 أيام.', '🔄 الصينية: أدر 3-4 مرات يومياً. توقف آخر 3 أيام.', '⚠️ تحذير: فوق 38.5°م يتلف البيض.', '🥚 البيض: متوسط الحجم، ليس أقدم من 5-7 أيام.']
+            };
+            document.getElementById('tips-container').innerHTML = tips[currentLang].map(x => '<p>' + x + '</p>').join('');
+        }
+
+        // ==================== AUTH ====================
+        function toggleAuth(type) {
+            document.getElementById('card-login').style.display = type === 'login' ? 'block' : 'none';
+            document.getElementById('card-signup').style.display = type === 'signup' ? 'block' : 'none';
+            document.getElementById('card-reset').style.display = type === 'reset' ? 'block' : 'none';
+        }
+
+        function userLogin() {
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-pass').value;
+            const role = document.getElementById('login-role').value;
+            
+            if (!email || !pass) {
+                alert(t('login') + ': ' + t('email') + ' & ' + t('password'));
                 return;
             }
-            msg.innerHTML = "⏳ কমান্ড পাঠানো হচ্ছে...";
-            msg.style.color = "#ffd740";
-            fetch(`http://${ESP_IP}/${cmd}`)
-                .then(res => {
-                    if (res.ok) {
-                        msg.innerHTML = "✅ সফল! বাতি পরিবর্তন হয়েছে।";
-                        msg.style.color = "#00e676";
-                    } else {
-                        msg.innerHTML = "❌ ESP32 সাড়া দেয়নি!";
-                        msg.style.color = "#ff5252";
-                    }
-                })
-                .catch(() => {
-                    msg.innerHTML = "⚠️ ESP32 খুঁজে পাচ্ছি না!";
-                    msg.style.color = "#ff5252";
-                });
+
+            let users = JSON.parse(localStorage.getItem('app_users') || '{}');
+            
+            // ডেমো: অ্যাডমিন অটো তৈরি
+            if (role === 'admin' && !users[email]) {
+                users[email] = { name: 'Admin', role: 'admin', password: pass, machines: ['MACHINE-001', 'MACHINE-002', 'MACHINE-003'] };
+                localStorage.setItem('app_users', JSON.stringify(users));
+            }
+
+            if (!users[email]) {
+                // নতুন গ্রাহক হিসেবে অটো রেজিস্টার
+                users[email] = { name: email, role: role, password: pass, machines: ['MACHINE-001'], machineId: 'MACHINE-001' };
+                localStorage.setItem('app_users', JSON.stringify(users));
+            }
+
+            if (users[email].password !== pass) {
+                alert('❌ ' + t('password'));
+                return;
+            }
+
+            currentUser = { email: email, ...users[email] };
+            localStorage.setItem('current_user', JSON.stringify(currentUser));
+
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('app-screen').style.display = 'block';
+            
+            if (currentUser.role === 'admin') {
+                document.getElementById('nav-admin').style.display = 'block';
+                document.getElementById('nav-home').style.display = 'none';
+                navTo('admin', document.getElementById('nav-admin'));
+                loadAdminMachines();
+            } else {
+                document.getElementById('nav-admin').style.display = 'none';
+                document.getElementById('nav-home').style.display = 'block';
+                navTo('home', document.getElementById('nav-home'));
+            }
+            
+            loadSupportNumber();
+            renderStages();
+            updateProgress();
+            updateTrayTimer();
+            calculateProfit();
+            loadMemo();
+            setTimeout(initChart, 300);
         }
+
+        function userSignUp() {
+            const email = document.getElementById('signup-email').value.trim();
+            const pass = document.getElementById('signup-pass').value;
+            const name = document.getElementById('signup-name').value.trim();
+            const phone = document.getElementById('signup-phone').value.trim();
+            const machineId = document.getElementById('signup-machine').value.trim() || 'MACHINE-001';
+            
+            if (!email || !pass || !name) {
+                alert('সব তথ্য পূরণ করুন');
+                return;
+            }
+            
+            let users = JSON.parse(localStorage.getItem('app_users') || '{}');
+            users[email] = { name, phone, role: 'user', password: pass, machines: [machineId], machineId };
+            localStorage.setItem('app_users', JSON.stringify(users));
+            
+            alert('✅ ' + t('createBtn'));
+            toggleAuth('login');
+        }
+
+        function resetPassword() {
+            alert('📧 ' + t('sendReset'));
+            toggleAuth('login');
+        }
+
+        function logout() {
+            if (!confirm(t('logout') + '?')) return;
+            localStorage.removeItem('current_user');
+            currentUser = null;
+            document.getElementById('auth-screen').style.display = 'block';
+            document.getElementById('app-screen').style.display = 'none';
+        }
+
+        // ==================== ADMIN MACHINES ====================
+        function loadAdminMachines() {
+            // ডেমো মেশিন ডেটা (পরে ফায়ারবেস থেকে আসবে)
+            const machines = [
+                { id: 'MACHINE-001', name: t('machine') + ' ১', owner: 'রফিকুল', temp: 37.6, hum: 55, status: 'online', day: 12 },
+                { id: 'MACHINE-002', name: t('machine') + ' ২', owner: 'করিম', temp: 37.4, hum: 60, status: 'online', day: 8 },
+                { id: 'MACHINE-003', name: t('machine') + ' ৩', owner: 'জামাল', temp: 0, hum: 0, status: 'offline', day: 0 }
+            ];
+            
+            document.getElementById('admin-total').innerText = machines.length;
+            document.getElementById('admin-online').innerText = machines.filter(m => m.status === 'online').length;
+            document.getElementById('admin-offline').innerText = machines.filter(m => m.status === 'offline').length;
+            
+            let html = '';
+            machines.forEach(m => {
+                html += `<div class="machine-card ${m.status === 'offline' ? 'offline' : ''}">
+                    <div class="mc-header">
+                        <span class="mc-name">🏠 ${m.name}</span>
+                        <span class="role-badge ${m.status === 'online' ? 'role-user' : 'role-admin'}">
+                            <i class="fas fa-circle" style="font-size:0.5rem;"></i> ${m.status === 'online' ? t('online') : t('offline')}
+                        </span>
+                    </div>
+                    <div style="font-size:0.75rem; color:#64748b; margin-bottom:8px;">👤 ${m.owner}</div>
+                    <div class="mc-stats">
+                        <span>🌡️ ${m.temp}°C</span>
+                        <span>💧 ${m.hum}%</span>
+                        <span>📅 ${m.day}</span>
+                    </div>
+                </div>`;
+            });
+            
+            document.getElementById('machine-list').innerHTML = html || '<p style="text-align:center;color:#94a3b8;">' + t('noMachine') + '</p>';
+        }
+
+        // ==================== NAV & TABS ====================
+        function navTo(secId, el) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(`sec-${secId}`).classList.add('active');
+            if (el) el.classList.add('active');
+        }
+
+        function switchTab(tab, el) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('dark_mode', document.body.classList.contains('dark-mode') ? 'on' : 'off');
+        }
+
+        // ==================== STAGES ====================
+        function renderStages() {
+            const langs = { bn: ['শুরু', 'শেষ', 'তাপ', 'আর্দ্রতা', 'ঘণ্টা'], en: ['Start', 'End', 'Temp', 'Hum', 'Hours'], ar: ['بداية', 'نهاية', 'حرارة', 'رطوبة', 'ساعات'] };
+            const L = langs[currentLang];
+            
+            let tHtml = '';
+            tempConfig.forEach((item, i) => {
+                tHtml += `<div class="stage-row"><div class="stage-inputs"><div class="form-group"><label>${L[0]}</label><input type="number" value="${item.startDay}"></div><div class="form-group"><label>${L[1]}</label><input type="number" value="${item.endDay}"></div><div class="form-group"><label>${L[2]} (°C)</label><input type="number" step="0.1" value="${item.val}"></div></div><button class="btn-delete" onclick="deleteStage('temp', ${i})"><i class="fas fa-trash"></i></button></div>`;
+            });
+            document.getElementById('temp-stage-list').innerHTML = tHtml;
+            
+            let hHtml = '';
+            humConfig.forEach((item, i) => {
+                hHtml += `<div class="stage-row"><div class="stage-inputs"><div class="form-group"><label>${L[0]}</label><input type="number" value="${item.startDay}"></div><div class="form-group"><label>${L[1]}</label><input type="number" value="${item.endDay}"></div><div class="form-group"><label>${L[3]} (%)</label><input type="number" value="${item.val}"></div></div><button class="btn-delete" onclick="deleteStage('hum', ${i})"><i class="fas fa-trash"></i></button></div>`;
+            });
+            document.getElementById('hum-stage-list').innerHTML = hHtml;
+            
+            let trHtml = '';
+            trayConfig.forEach((item, i) => {
+                trHtml += `<div class="stage-row"><div class="stage-inputs"><div class="form-group"><label>${L[0]}</label><input type="number" value="${item.startDay}"></div><div class="form-group"><label>${L[1]}</label><input type="number" value="${item.endDay}"></div><div class="form-group"><label>${L[4]}</label><input type="number" value="${item.val}"></div></div><button class="btn-delete" onclick="deleteStage('tray', ${i})"><i class="fas fa-trash"></i></button></div>`;
+            });
+            document.getElementById('tray-stage-list').innerHTML = trHtml;
+        }
+
+        function addStage(type) {
+            if (type === 'temp') tempConfig.push({ startDay: 1, endDay: 1, val: 37.5 });
+            if (type === 'hum') humConfig.push({ startDay: 1, endDay: 1, val: 60 });
+            if (type === 'tray') trayConfig.push({ startDay: 1, endDay: 1, val: 2 });
+            renderStages();
+        }
+
+        function deleteStage(type, i) {
+            if (type === 'temp') tempConfig.splice(i, 1);
+            if (type === 'hum') humConfig.splice(i, 1);
+            if (type === 'tray') trayConfig.splice(i, 1);
+            renderStages();
+        }
+
+        function saveSettings(type) {
+            localStorage.setItem('settings_' + type, JSON.stringify(eval(type + 'Config')));
+            alert('✅ ' + t('save'));
+        }
+
+        // ==================== SUPPORT ====================
+        function loadSupportNumber() {
+            const n = localStorage.getItem('admin_support_num') || '01700000000';
+            document.getElementById('disp-support-num').innerText = n;
+            document.getElementById('call-btn').href = 'tel:' + n;
+        }
+
+        function sendMessage() {
+            alert('✅ ' + t('sendMsg'));
+            document.getElementById('user-msg').value = '';
+        }
+
+        // ==================== BATCH ====================
+        function resetBatch() {
+            if (!confirm(t('newBatch') + '?')) return;
+            localStorage.setItem('batch_start', Date.now());
+            updateProgress();
+        }
+
+        function applyBirdPreset() {
+            const key = document.getElementById('bird-preset').value;
+            if (!key) return;
+            const p = birdPresets[key];
+            localStorage.setItem('bird_type', key);
+            localStorage.setItem('total_days', p.days);
+            localStorage.setItem('batch_start', Date.now());
+            tempConfig = [{ startDay: 1, endDay: p.days, val: p.temp }];
+            humConfig = [{ startDay: 1, endDay: p.days, val: p.hum }];
+            trayConfig = [{ startDay: 1, endDay: p.days, val: p.turn }];
+            renderStages();
+            document.getElementById('tgt-temp').innerText = p.temp + "°C";
+            document.getElementById('tgt-hum').innerText = p.hum + "%";
+            document.getElementById('tgt-tray').innerText = "✓";
+            updateProgress();
+            alert('✅ ' + p.name);
+        }
+
+        function updateProgress() {
+            const start = localStorage.getItem('batch_start');
+            const total = parseInt(localStorage.getItem('total_days')) || 21;
+            let day = 1;
+            if (start) {
+                day = Math.min(Math.floor((Date.now() - parseInt(start)) / 86400000) + 1, total);
+            } else localStorage.setItem('batch_start', Date.now());
+            const pct = Math.round(day / total * 100);
+            const f = document.getElementById('progress-fill');
+            if (f) { f.style.width = pct + '%'; f.innerText = pct + '%'; }
+            const pt = document.getElementById('progress-text');
+            if (pt) pt.innerText = day + ' / ' + total;
+            const dd = document.getElementById('disp-day');
+            if (dd) dd.innerText = '📅 ' + day;
+        }
+
+        function updateTrayTimer() {
+            const last = parseInt(localStorage.getItem('last_turn')) || Date.now();
+            const diff = (last + 7200000) - Date.now();
+            const n = document.getElementById('next-turn');
+            const l = document.getElementById('last-turn');
+            if (!n) return;
+            if (diff > 0) {
+                const h = Math.floor(diff / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+                n.innerText = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+            } else n.innerText = '🚀';
+            const d = new Date(last);
+            l.innerText = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+        }
+
+        function calculateProfit() {
+            const eggs = parseInt(document.getElementById('calc-eggs')?.value) || 0;
+            const ep = parseFloat(document.getElementById('calc-egg-price')?.value) || 0;
+            const ec = parseFloat(document.getElementById('calc-elec-cost')?.value) || 0;
+            const rate = parseInt(document.getElementById('calc-rate')?.value) || 0;
+            const cp = parseFloat(document.getElementById('calc-chick-price')?.value) || 0;
+            const chicks = Math.round(eggs * rate / 100);
+            const profit = (chicks * cp) - (eggs * ep) - ec;
+            const ce = document.getElementById('calc-chicks');
+            const cpf = document.getElementById('calc-profit');
+            if (ce) ce.innerText = chicks;
+            if (cpf) {
+                cpf.innerText = profit.toFixed(2);
+                cpf.style.color = profit >= 0 ? '#059669' : '#ef4444';
+            }
+        }
+
+        function saveMemo() {
+            localStorage.setItem('memo_fertile', document.getElementById('memo-fertile').value);
+            localStorage.setItem('memo_waste', document.getElementById('memo-waste').value);
+        }
+        function loadMemo() {
+            if (document.getElementById('memo-fertile')) {
+                document.getElementById('memo-fertile').value = localStorage.getItem('memo_fertile') || '';
+                document.getElementById('memo-waste').value = localStorage.getItem('memo_waste') || '';
+            }
+        }
+
+        // ==================== CHART ====================
+        let chartInstance = null;
+        function initChart() {
+            const ctx = document.getElementById('liveChart');
+            if (!ctx) return;
+            const labels = [], tempData = [], humData = [];
+            for (let i = 23; i >= 0; i -= 2) {
+                labels.push((24 - i) + "h");
+                tempData.push(37.5 + (Math.random() - 0.5) * 0.5);
+                humData.push(55 + (Math.random() - 0.5) * 5);
+            }
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: t('tempCurr') + ' (°C)', data: tempData, borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', tension: 0.4, borderWidth: 2 },
+                        { label: t('humCurr') + ' (%)', data: humData, borderColor: '#3498db', backgroundColor: 'rgba(52,152,219,0.1)', tension: 0.4, borderWidth: 2, yAxisID: 'y1' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { labels: { font: { size: 10 } } } },
+                    scales: {
+                        y: { type: 'linear', display: true, position: 'left' },
+                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+        }
+
+        // ==================== COMMANDS ====================
+        function sendCommand(cmd) {
+            if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+                firebase.database().ref('/incubator/command').set(cmd)
+                    .then(() => { alert("✅ " + cmd); if (cmd === 'turn_tray') { localStorage.setItem('last_turn', Date.now()); updateTrayTimer(); } })
+                    .catch(e => alert("❌ " + e.message));
+            } else {
+                alert("📤 " + cmd);
+                if (cmd === 'turn_tray') { localStorage.setItem('last_turn', Date.now()); updateTrayTimer(); }
+            }
+        }
+
+        // ==================== INIT ====================
+        window.onload = function() {
+            const savedLang = localStorage.getItem('app_lang') || 'bn';
+            setLanguage(savedLang);
+            if (localStorage.getItem('dark_mode') === 'on') document.body.classList.add('dark-mode');
+            
+            const savedBird = localStorage.getItem('bird_type');
+            if (savedBird && document.getElementById('bird-preset')) document.getElementById('bird-preset').value = savedBird;
+            
+            // অটো লগইন
+            const cu = localStorage.getItem('current_user');
+            if (cu) {
+                currentUser = JSON.parse(cu);
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('app-screen').style.display = 'block';
+                if (currentUser.role === 'admin') {
+                    document.getElementById('nav-admin').style.display = 'block';
+                    document.getElementById('nav-home').style.display = 'none';
+                    navTo('admin', document.getElementById('nav-admin'));
+                    loadAdminMachines();
+                } else {
+                    navTo('home', document.getElementById('nav-home'));
+                }
+                loadSupportNumber();
+                renderStages();
+                updateProgress();
+                updateTrayTimer();
+                calculateProfit();
+                loadMemo();
+                setTimeout(initChart, 300);
+            }
+            
+            updateTrayTimer();
+            setInterval(updateTrayTimer, 1000);
+            setInterval(updateProgress, 60000);
+        };
     </script>
 </body>
 </html>
